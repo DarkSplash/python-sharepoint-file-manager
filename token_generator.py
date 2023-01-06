@@ -94,6 +94,10 @@ def loginProcess(authFlow: dict, guiFlag: bool, useMFA: bool) -> str:
     function and uses Selenium to login and accept the Azure app permissions.
     After logging in, the redirect URL will be returned for future use.
 
+    This is by far the jankiest function in this whole script, and could break
+    on a whim due to Google updating/changing their login UI, so if in the future
+    this script doesn't work, this is my prime suspect as the culprit.
+
     Parameters
     ----------
     authFlow : dict
@@ -115,6 +119,9 @@ def loginProcess(authFlow: dict, guiFlag: bool, useMFA: bool) -> str:
         localhost address, the script grabs that URL and returns it to be
         converted into a dict in the createAuthResponseDict() function.
     """
+    sleepDuration = 5                                   # How long the script waits for new elements to actually load on the site
+    driverWaitDuration = 3                              # How long the webdriver will look for the new element
+    
     ffOpt = FirefoxOptions()
     ffOpt.add_argument("-headless")                     # Option for Firefox without a GUI
 
@@ -125,29 +132,29 @@ def loginProcess(authFlow: dict, guiFlag: bool, useMFA: bool) -> str:
     
     driver.get(authFlow["auth_uri"])                    # Opening up authentication page
 
-    time.sleep(5)                                       # Waiting for the webpage to load
-    passwordBox = WebDriverWait(driver, 5).until(               
+    time.sleep(sleepDuration)                           # Waiting for the webpage to load
+    passwordBox = WebDriverWait(driver, driverWaitDuration).until(               
         EC.presence_of_element_located((By.ID, "i0118")))   # Selecting password input box
     
     passwordBox.send_keys(os.environ.get("M365_PASSWORD"))
     passwordBox.send_keys(Keys.RETURN)
 
-    time.sleep(5)                                       # Accepting Azure App permissions
+    time.sleep(sleepDuration)                           # Accepting Azure App permissions
     try:
-        firstTimeCheck = WebDriverWait(driver, 5).until(
+        firstTimeCheck = WebDriverWait(driver, driverWaitDuration).until(
             EC.presence_of_element_located((By.ID, "consentHeader")))
 
         if firstTimeCheck.text == "Permissions requested":  # If this is the first time running, accept app permissions
-            acceptButton = WebDriverWait(driver, 5).until(
+            acceptButton = WebDriverWait(driver, driverWaitDuration).until(
                 EC.presence_of_element_located((By.ID, "idSIButton9")))
             acceptButton.click()
     except:
         pass
 
     if useMFA:
-        time.sleep(5)                                       # Waiting for redirect to MFA auth page
+        time.sleep(sleepDuration)                           # Waiting for redirect to MFA auth page
         try:                                                # Sometimes MFA doesnt appear even with MFA enabled?
-            otpBox = WebDriverWait(driver, 5).until(
+            otpBox = WebDriverWait(driver, driverWaitDuration).until(
                 EC.presence_of_element_located((By.ID, "idTxtBx_SAOTCC_OTC")))  # Selecting MFA input box
 
             mfaCode = getTOTP(os.environ.get("MFA_SECRET")) # Grab TOTP code only after page has loaded due to time sensitive nature of TOTPs
@@ -156,11 +163,11 @@ def loginProcess(authFlow: dict, guiFlag: bool, useMFA: bool) -> str:
         except:                                             # If for whatever reason the MFA login doesn't appear, pass on by
             pass
             
-    time.sleep(5)
+    time.sleep(sleepDuration)
     try:                                                # If it goes to the Remember this PC prompt (unable to check if this actually works)
-            noButton = WebDriverWait(driver, 5).until(  # Cannot get this to re-appear no matter what I try
-                EC.presence_of_element_located((By.ID, "idBtn_Back")))
-            noButton.click()
+        noButton = WebDriverWait(driver, driverWaitDuration).until( # Cannot get this to re-appear no matter what I try
+            EC.presence_of_element_located((By.ID, "idBtn_Back")))
+        noButton.click()
     except:                                             # If it goes straight to the Redirect URI, it will crash Selenium, hence this except
         pass
 
