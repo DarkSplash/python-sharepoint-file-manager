@@ -1,5 +1,5 @@
 # Script by: DarkSplash
-# Last edited: 2023-01-03
+# Last edited: 2023-01-06
 
 # This is one of the dependency scripts for the downloader/uploader script.
 # This specific script first checks to see if all selenium dependencies are installed,
@@ -51,11 +51,11 @@ def seleniumChecker():
             print(f"Add/check the geckodriver file in {RED}{os.getcwd()}{CLEAR}")
             print("or execute the code in a directory that already has the geckodriver file in it.")
         
-        print("\nAn error occurred with Selenium. Make sure you have both Firefox")
-        print("installed and a geckodriver that both matches your Firefox")
-        print("version and also is in the same directory as this script or part")
-        print("of your PATH/Environment Variable. Look at the README for further")
-        print("instructions on how to do this.")
+        print("\nAn error occurred with Selenium. Make sure you have both Firefox installed and")
+        print("a geckodriver executable that both matches your Firefox version and also is in")
+        print("the same directory as this script or part of your PATH/Environment Variable.")
+        print("Look at the README for further instructions on how to do this.")
+        print("\nIf this is your first time running the script, try running it once more.")
         print("\nExiting script...")
         raise SystemExit(0)
 
@@ -150,7 +150,7 @@ def loginProcess(auth_flow: dict, gui_flag: bool, use_mfa: bool) -> str:
             otpBox = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.ID, "idTxtBx_SAOTCC_OTC")))  # Selecting MFA input box
 
-            mfaCode = getTOTP(os.environ.get("MFA_SECRET")) # Grab TOTP code only after page has loaded
+            mfaCode = getTOTP(os.environ.get("MFA_SECRET")) # Grab TOTP code only after page has loaded due to time sensitive nature of TOTPs
             otpBox.send_keys(mfaCode)
             otpBox.send_keys(Keys.RETURN)
         except:                                             # If for whatever reason the MFA login doesn't appear, pass on by
@@ -226,7 +226,7 @@ def tokenGen(guiFlag: bool, useMFA: bool):
     authFlow = pca.initiate_auth_code_flow(appScopes, login_hint=os.environ.get("M365_USERNAME"))               # Generate the auth flow
 
     print("\nLogging into O365 and accepting app permissions (can take up to a minute)...")
-    authResponseUrl = loginProcess(authFlow, guiFlag, useMFA) # Get the auth response in string format
+    authResponseUrl = loginProcess(authFlow, guiFlag, useMFA)   # Get the auth response in string format
     authResponse = createAuthResponseDict(authResponseUrl)      # Convert the auth response string into a dict
 
     print("\nGenerating token..")
