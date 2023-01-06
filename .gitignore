@@ -1,0 +1,5 @@
+NetOps Work Tracker.xlsx
+__pycache__/
+geckodriver.*
+*.env
+!sample.env
