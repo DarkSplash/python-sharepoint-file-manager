@@ -1,7 +1,7 @@
 # Script by: DarkSplash
 # Last edited: 2023-01-12
 
-# This is a 100% working Python script that will download a file from a 
+# This is a 100% working Python script that will upload a local file to a 
 # SharePoint/OneDrive/Teams location. This script supports MFA & non-MFA logins,
 # and requires quite alot of setup before it will work. Please reference the 
 # README.md file for all script setup, as most of the comments inside this 
@@ -73,42 +73,82 @@ def argparseInit():
 
 
 
-def downloadFile(token: dict):
-    """
-    Function takes a token created by MSAL's acquire_token_by_auth_code_flow()
-    function and uses a value within the token to create an HTTP header. The 
-    Python Requests library is then used to make API calls to Microsoft Graph,
-    specifically to the "drives" API with the header being used for
-    authentication. Finally, inside the "drives" API JSON response, there is a
-    value "@microsoft.graph.downloadUrl" which is passed to the
-    Requests library once more to download the file. The file is then written
-    to the same directory as the script. 
-
-    Parameters
-    ----------
-    token : dict
-        A dictionary object created by MSAL's acquire_token_by_auth_code_flow()
-        function. Contains information needed to create the HTTP header that is
-        used for authentication with the Microsoft Graph API calls.
-    """
+def uploadFile(token):
     headers = {'Authorization': 'Bearer {}'.format(token['access_token'])}  # Header will be used for authentication with Microsoft Graph
 
-    itemURL = urllib.parse.quote(f'{os.environ.get("M365_ITEM_PATH")}/{os.environ.get("M365_FILENAME")}')  # Converting item path to URL friendly string
+    fullRelativePath = urllib.parse.quote(f'{os.environ.get("M365_ITEM_PATH")}/{os.environ.get("M365_FILENAME")}')
+    fileRelativePath = urllib.parse.quote(f'{os.environ.get("M365_FILENAME")}')
+    folderRelativePath = urllib.parse.quote(f'{os.environ.get("M365_ITEM_PATH")}')
 
-    result = requests.get(f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/root:/{itemURL}', headers=headers)    # Graph API call to file itself
-    resultJSON = result.json()                                      # Opening up the JSON response Graph gives you
-
-    fileDownloadURL = resultJSON["@microsoft.graph.downloadUrl"]    # Selecting the value from the "@microsoft.graph.downloadUrl" key
-    download = requests.get(fileDownloadURL)                        # Downloading the file
-    
-    open(os.environ.get("M365_FILENAME"), "wb").write(download.content)   # Writing the file to the directory the script is in
-
-    stringPath = f'{os.getcwd()}/{os.environ.get("M365_FILENAME")}'
-    if Path(stringPath).exists():
-        print(f"\n{GREEN}File \"{os.environ.get('M365_FILENAME')}\" has been sucessfully downloaded!{CLEAR}")
+    # Checking to see if file exists
+    result = requests.get(f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/root:/{fullRelativePath}', headers=headers)
+    if result.status_code == 200:
+        fileExists = True
+        fileID = result.json()['id']
     else:
-        print(f"\n{RED}File \"{os.environ.get('M365_FILENAME')}\" has not been sucessfully downloaded!{CLEAR}")
+        fileExists = False
+        fileID = ''
 
+    # Getting folder ID
+    result = requests.get(f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/root:/{folderRelativePath}', headers=headers)
+    folderID = result.json()['id']
+
+    # Getting local filesize
+    stringPath = f'{os.getcwd()}/{os.environ.get("M365_FILENAME")}'
+
+    if Path(stringPath).exists():
+        uploadPath = Path(stringPath)
+        st = os.stat(uploadPath)
+        size = st.st_size
+
+    if size <= 4194304:
+        if fileExists:
+            result = requests.put(
+            f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/items/{fileID}/content',
+            headers = headers,
+            data=open(os.environ.get("M365_FILENAME"), 'rb').read()
+            )
+        else:
+            result = requests.put(f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/items/{folderID}:/{fileRelativePath}:/content'
+                            ,headers = headers
+                            ,data = open(os.environ.get("M365_FILENAME"), 'rb').read()
+                                )
+    else:
+        result = requests.post(
+        f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/items/{folderID}:/{fileRelativePath}:/createUploadSession',
+        headers={'Authorization': 'Bearer ' + token['access_token']},
+        json={
+            '@microsoft.graph.conflictBehavior': 'replace',
+            'description': 'Uploading a large file',
+            'fileSystemInfo': {'@odata.type': 'microsoft.graph.fileSystemInfo'},
+            'name': os.environ.get("M365_FILENAME")
+            }
+            )
+        upload_url = result.json()['uploadUrl']
+        CHUNK_SIZE = 10485760
+        chunks = int(size / CHUNK_SIZE) + 1 if size % CHUNK_SIZE > 0 else 0
+        with open(os.environ.get("M365_FILENAME"), 'rb') as fd:
+            start = 0
+            for chunk_num in range(chunks):
+                chunk = fd.read(CHUNK_SIZE)
+                bytes_read = len(chunk)
+                upload_range = f'bytes {start}-{start + bytes_read - 1}/{size}'
+                result = requests.put(upload_url,
+                        headers={
+                            'Content-Length': str(bytes_read),
+                            'Content-Range': upload_range
+                        },
+                        data=chunk
+                    )
+                result.raise_for_status()
+                start += bytes_read
+    
+    fileCheck = requests.get(f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/root:/{fullRelativePath}', headers=headers)
+    if fileCheck.status_code == 200:
+        print(f"\n{GREEN}File \"{os.environ.get('M365_FILENAME')}\" has been sucessfully uploaded!{CLEAR}")
+    else:
+        print(f"\n{RED}File \"{os.environ.get('M365_FILENAME')}\" has not been sucessfully uploaded!{CLEAR}")
+       
 
 
 def main():
@@ -121,8 +161,8 @@ def main():
         driveid_finder.findDriveID(token)
         raise SystemExit(0)                             # Exiting the script as none of the variables needed to download the file were checked
 
-    print("\nDownloading file...")
-    downloadFile(token)                                 # Download the file using the token for authentication
+    print("\nUploading file...")
+    uploadFile(token)                                   # Upload the file using the token for authentication
 
 
 

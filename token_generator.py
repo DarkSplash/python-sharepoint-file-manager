@@ -70,7 +70,7 @@ def getTOTP(mfa_secret: str) -> str:
     ----------
     mfa_secret : str
         The secret key that gets generated when setting up MFA. Note that this
-        string is from the general Authenticator App when looking at your O365
+        string is from the general Authenticator App when looking at your M365
         account security tab, not the Microsoft Authenticator. You can have 
         both a Microsoft Authenticator and a general Authenticator App setup at
         the same time.
@@ -132,6 +132,7 @@ def loginProcess(authFlow: dict, guiFlag: bool, useMFA: bool) -> str:
     
     driver.get(authFlow["auth_uri"])                    # Opening up authentication page
 
+    ### PASSWORD INPUT FIELD ***
     time.sleep(sleepDuration)                           # Waiting for the webpage to load
     passwordBox = WebDriverWait(driver, driverWaitDuration).until(               
         EC.presence_of_element_located((By.ID, "i0118")))   # Selecting password input box
@@ -139,41 +140,44 @@ def loginProcess(authFlow: dict, guiFlag: bool, useMFA: bool) -> str:
     passwordBox.send_keys(os.environ.get("M365_PASSWORD"))
     passwordBox.send_keys(Keys.RETURN)
 
-    time.sleep(sleepDuration)                           # Accepting Azure App permissions
-    try:
-        firstTimeCheck = WebDriverWait(driver, driverWaitDuration).until(
-            EC.presence_of_element_located((By.ID, "consentHeader")))
-
-        if firstTimeCheck.text == "Permissions requested":  # If this is the first time running, accept app permissions
-            acceptButton = WebDriverWait(driver, driverWaitDuration).until(
-                EC.presence_of_element_located((By.ID, "idSIButton9")))
-            acceptButton.click()
-    except:
-        pass
-
+    ### MFA CODE FIELD ###
     if useMFA:
-        time.sleep(sleepDuration)                           # Waiting for redirect to MFA auth page
-        try:                                                # Sometimes MFA doesnt appear even with MFA enabled?
+        time.sleep(sleepDuration)                       # Waiting for redirect to MFA auth page
+        try:                                            # Sometimes MFA doesnt appear even with MFA enabled?
             otpBox = WebDriverWait(driver, driverWaitDuration).until(
                 EC.presence_of_element_located((By.ID, "idTxtBx_SAOTCC_OTC")))  # Selecting MFA input box
 
             mfaCode = getTOTP(os.environ.get("MFA_SECRET")) # Grab TOTP code only after page has loaded due to time sensitive nature of TOTPs
             otpBox.send_keys(mfaCode)
             otpBox.send_keys(Keys.RETURN)
-        except:                                             # If for whatever reason the MFA login doesn't appear, pass on by
+        except:                                         # If for whatever reason the MFA login doesn't appear, pass on by
             pass
-            
+
+    ### APP PERMISSIONS FIELD ###
+    time.sleep(sleepDuration)                           # Accepting Azure App permissions
+    try:
+        firstTimeCheck = WebDriverWait(driver, driverWaitDuration).until(
+            EC.presence_of_element_located((By.ID, "loginHeader")))
+
+        if firstTimeCheck.text == "Permissions requested":  # If this is the first time running after AD app creation, accept app permissions
+            acceptButton = WebDriverWait(driver, driverWaitDuration).until(
+                EC.presence_of_element_located((By.ID, "idSIButton9")))
+            acceptButton.click()
+    except:
+        pass
+
+    ### REMEMBER THIS PC ###
     time.sleep(sleepDuration)
     try:                                                # If it goes to the Remember this PC prompt (unable to check if this actually works)
-        noButton = WebDriverWait(driver, driverWaitDuration).until( # Cannot get this to re-appear no matter what I try
+        noButton = WebDriverWait(driver, driverWaitDuration).until( # Cannot get this prompt to re-appear no matter what I try
             EC.presence_of_element_located((By.ID, "idBtn_Back")))
         noButton.click()
-    except:                                             # If it goes straight to the Redirect URI, it will crash Selenium, hence this except
+    except:                                             # If there is no "Remember this PC" prompt, continue on to the Redirect URI
         pass
 
     time.sleep(10)                                      # Waiting for Firefox to fail loading the localhost redirect
-    url = driver.current_url                            # Grabbing the url after the redirect fails
-    driver.quit()                                       # Exiting the headless browser
+    url = driver.current_url                            # Grabbing the URL after the redirect fails
+    driver.quit()                                       # Exiting the browser
 
     return url                                          # Returning URL which has dict in string format
 
@@ -226,13 +230,13 @@ def createAuthResponseDict(url: str) -> dict:
 
 
 def tokenGen(guiFlag: bool, useMFA: bool):
-    appScopes = ["Files.Read.All","Sites.Read.All"]             # Scopes defined in Azure App Registration
+    appScopes = ["Files.ReadWrite.All","Sites.Read.All"]        # Scopes defined in Azure App Registration
     seleniumChecker()                                           # Making sure Selenium & Firefox/geckodriver work
     
     pca = msal.PublicClientApplication(os.environ.get("CLIENT_ID"), authority=os.environ.get("AUTHORITY_URL"))  # Create a Public Application
     authFlow = pca.initiate_auth_code_flow(appScopes, login_hint=os.environ.get("M365_USERNAME"))               # Generate the auth flow
 
-    print("\nLogging into O365 and accepting app permissions (can take up to a minute)...")
+    print("\nLogging into M365 and accepting app permissions (can take up to a minute)...")
     authResponseUrl = loginProcess(authFlow, guiFlag, useMFA)   # Get the auth response in string format
     authResponse = createAuthResponseDict(authResponseUrl)      # Convert the auth response string into a dict
 
