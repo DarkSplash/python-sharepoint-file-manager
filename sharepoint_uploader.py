@@ -7,9 +7,9 @@
 # README.md file for all script setup, as most of the comments inside this 
 # script try to explain the more technical side of what is happening.
 
-import dotenv_checker                                   # Script to check msal_config.env variables
-import token_generator                                  # Script to generate a MSAL token
-import driveid_finder                                   # Script to attempt to find a SharePoint/OneDrive/Teams drive_id
+import core.dotenv_checker as dotenv_checker                                   # Script to check msal_config.env variables
+import core.token_generator as token_generator                                  # Script to generate a MSAL token
+import core.driveid_finder as driveid_finder                                   # Script to attempt to find a SharePoint/OneDrive/Teams drive_id
 
 import argparse
 import os
