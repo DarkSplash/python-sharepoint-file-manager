@@ -119,11 +119,11 @@ def msalConfigChecker(useMFA: bool, runDriveID: bool):
         print(f"\n{RED}M365_DRIVE_ID{CLEAR} variable missing from msal_config.env")
         emptyVars = True
     try:
-        if len(os.environ.get("M365_ITEM_PATH")) == 0:
-            print(f"\n{RED}M365_ITEM_PATH{CLEAR} variable empty")
+        if len(os.environ.get("M365_FOLDER_PATH")) == 0:
+            print(f"\n{RED}M365_FOLDER_PATH{CLEAR} variable empty")
             emptyVars = True
     except:
-        print(f"\n{RED}M365_ITEM_PATH{CLEAR} variable missing from msal_config.env")
+        print(f"\n{RED}M365_FOLDER_PATH{CLEAR} variable missing from msal_config.env")
         emptyVars = True
     try:
         if len(os.environ.get("MFA_SECRET")) == 0 and useMFA:
@@ -170,7 +170,7 @@ def msalConfigCreator():
         file.write("CLIENT_ID =         \"\"\n")
         file.write("AUTHORITY_URL =     \"\"\n")
         file.write("M365_DRIVE_ID =     \"\"\n")
-        file.write("M365_ITEM_PATH =    \"\"\n")
+        file.write("M365_FOLDER_PATH =    \"\"\n")
         file.write("M365_FILENAME =     \"\"\n")
         file.write("MFA_SECRET =        \"\"\n")
         file.write("M365_USERNAME =     \"\"\n")

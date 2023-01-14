@@ -76,9 +76,9 @@ def argparseInit():
 def uploadFile(token):
     headers = {'Authorization': 'Bearer {}'.format(token['access_token'])}  # Header will be used for authentication with Microsoft Graph
 
-    fullRelativePath = urllib.parse.quote(f'{os.environ.get("M365_ITEM_PATH")}/{os.environ.get("M365_FILENAME")}')
+    fullRelativePath = urllib.parse.quote(f'{os.environ.get("M365_FOLDER_PATH")}/{os.environ.get("M365_FILENAME")}')
     fileRelativePath = urllib.parse.quote(f'{os.environ.get("M365_FILENAME")}')
-    folderRelativePath = urllib.parse.quote(f'{os.environ.get("M365_ITEM_PATH")}')
+    folderRelativePath = urllib.parse.quote(f'{os.environ.get("M365_FOLDER_PATH")}')
 
     # Checking to see if file exists
     result = requests.get(f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/root:/{fullRelativePath}', headers=headers)

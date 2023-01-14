@@ -1,0 +1,7 @@
+msal
+openpyxl
+Office365-REST-Python-Client
+pyotp
+python-dotenv
+selenium
+requests

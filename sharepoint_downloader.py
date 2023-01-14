@@ -93,7 +93,7 @@ def downloadFile(token: dict):
     """
     headers = {'Authorization': 'Bearer {}'.format(token['access_token'])}  # Header will be used for authentication with Microsoft Graph
 
-    itemURL = urllib.parse.quote(f'{os.environ.get("M365_ITEM_PATH")}/{os.environ.get("M365_FILENAME")}')  # Converting item path to URL friendly string
+    itemURL = urllib.parse.quote(f'{os.environ.get("M365_FOLDER_PATH")}/{os.environ.get("M365_FILENAME")}') # Converting item path to URL friendly string
 
     result = requests.get(f'https://graph.microsoft.com/v1.0/drives/{os.environ.get("M365_DRIVE_ID")}/root:/{itemURL}', headers=headers)    # Graph API call to file itself
     resultJSON = result.json()                                      # Opening up the JSON response Graph gives you
