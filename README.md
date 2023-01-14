@@ -26,10 +26,8 @@ This script optionally offers numerous flags/arguments you can add to the end of
   
   - If you want to see the Selenium browser automation that is being done (or need it for some bugfixing), you can add the flag `-G` or `--gui` to the end of the script to have Firefox launch with a GUI instead of being headless.
   
-  - Lastly, there is an option to attempt to find your `M365_DRIVE_ID` variable by running the script with the `-D` or `--driveid` flag.  More details on this drive ID flag can be found in the second half of the [Finding Your Drive ID section](#finding-your-drive-id).  You can also run all three of these flags at the same time if you wished to do so.
+  - Lastly, there is an option to attempt to find your `M365_DRIVE_ID` variable by running the script with the `-D` or `--driveid` flag.  More details on this drive ID flag can be found in the second half of the [Finding Your Drive ID section](#finding-your-drive-id).  You can also run all three of these flags at the same time if you wish to do so.
 </details>
-
----
 
 This script requires a decent amount of pre-configuration before it will work, with this [File Handling in SharePoint with Python](https://python.plainenglish.io/all-you-need-to-know-file-handing-in-sharepoint-using-python-df43fde60813) tutorial being the main inspiration for this script.  However, I had a few issues following this tutorial (no information on drive_id's and token generation didn't work with MFA), so a full setup tutorial for this script is included below.
 
@@ -49,7 +47,7 @@ MFA_SECRET =        "2w2h5q6ztwbb75rx"
 M365_USERNAME =     "user@example.com"
 M365_PASSWORD =     "hunter2"
 ```
-Without all of these variables filled out, ***the script will not work*** (unless you use certain runtime arguments).  You will need to create the `msal_config.env` file as one of the first things during setup.  You can either do this manually, or run sharepoint_downloader.py without a `msal_config.env` file in your script's directory, and the script will detect that you are missing the file and ask if you want to make a blank `msal_config.env` file.
+Without all these variables filled out, ***the script will not work*** (unless you use certain runtime arguments).  You will need to create the `msal_config.env` file as one of the first things during setup.  You can either do this manually or run sharepoint_downloader.py without a `msal_config.env` file in your script's directory, and the script will detect that you are missing the file and ask if you want to make a blank `msal_config.env` file.
 
 If any of your variables in `msal_config.env` are not filled out or are very obviously wrong, the script will report which variables are blank/wrong, and then exit the script.  I will explicitly mention the variables in the tutorial when they appear, so just remember that they will need to be eventually filled out and that the script will not work unless all eight variables are filled out.
 
@@ -62,11 +60,11 @@ After entering Azure Active Directory, select <ins>**App registrations**</ins> a
 
 <p align="center"><img src="docs/2-done.png" width="750" height="600"/></p>
 
-Next, you must give the app a name and select <ins>**Accounts in this organizational directory only ({Tenant Name} only - Single tenant)**</ins> as you are downloading files from the same organizational directory this app is in.  This essentially means you will only be able to download files from within your organization.  I think you may be able to select the multitenant option, but this will open your API permissions to ***ANY*** Microsoft 365 account, look at the [Common Questions & Issues](#common-questions--issues) for a more detailed  discussion of single vs multitenant apps.
+Next, you must give the app a name and select <ins>**Accounts in this organizational directory only ({Tenant Name} only - Single tenant)**</ins> as you are downloading files from the same organizational directory this app is in.  This essentially means you will only be able to download files from within your organization.  I think you may be able to select the multitenant option, but this will open your API permissions to ***ANY*** Microsoft 365 account, look at the [Common Questions & Issues](#common-questions--issues) for a more detailed discussion of single vs multitenant apps.
 
-Finally, at the bottom of the page is the most important step in this guide.  For the Redirect URI, select <ins>**Public client/native (mobile & desktop)**</ins> from the drop-down list and type in `http://localhost:9999/tokenCallback`.  The script ***WILL NOT WORK*** if the redirect URI platform configuration is set to anything but Public client/native (mobile & desktop).
+Finally, at the bottom of the page is the most important step in this guide.  For the Redirect URI, select <ins>**Public client/native (mobile & desktop)**</ins> from the drop-down list and type in `http://localhost:9999/tokenCallback`.  The script ***WILL NOT WORK*** if the redirect URI platform configuration is set to anything but Public client/native (mobile & desktop).  If you already have an application on port 9999, look at the [Common Questions & Issues](#common-questions--issues) for a fix.
 
-The reason behind this is that mobile & desktop are the only platform type that allows custom redirect URIs, and the redirect points to a non-existent localhost server in order to substring the end of the URL which will have authentication variables.  Look at [loginProcess()](sharepoint_downloader_msal.py#L303) and [createAuthResponseDict()](sharepoint_downloader_msal.py#L385) if you want to know more about the specifics.
+The reason behind these selections is that mobile & desktop are the only platform type that allows custom redirect URIs, and the redirect points to a non-existent localhost server in order to substring the end of the URL which will have authentication variables.  Look at [loginProcess()](core/token_generator.py#L91) and [createAuthResponseDict()](core/token_generator.py#L186) if you want to know more about the specifics.
 
 <p align="center"><img src="docs/3-done.png" width="750" height="600"/></p>
 
@@ -120,7 +118,7 @@ Finally, select the <ins>**Add a client application**</ins> button under the Aut
 
 <p align="center"><img src="docs/15-done.png" width="580" height="310"/></p>
 
-If you have done everything correctly so far your Expose an API screen should look similar to the screenshot below, and you should have your `CLIENT_ID` and `AUTHORITY_URL` variables entered in your `msal_config.env` file.
+If you have done everything correctly so far, your Expose an API screen should look similar to the screenshot below, and you should have your `CLIENT_ID` and `AUTHORITY_URL` variables entered in your `msal_config.env` file.
 
 <p align="center"><img src="docs/16-done.png" width="750" height="600"/></p>
 
@@ -157,7 +155,9 @@ Then just like before, you get a giant JSON response at the bottom of the page. 
 
 If for some reason you are unable to access the Graph Explorer app in your organization, but do still have the Sites.Read.All and Files.ReadWrite.All scopes, you can instead perform the two API calls through the script.  This second solution using the script requires you to jump ahead a bit and download all the python packages, which is outlined in the [Python Package Installation step here](#python-package-installation).  Additionally, if you will be using MFA, you will also need to follow the steps for [Acquiring an MFA Secret here](#acquiring-an-mfa-secret).  After downloading all the python packages and setting up MFA if needed, make sure `CLIENT_ID`, `AUTHORITY_URL`, `MFA_SECRET` (if used), `M365_USERNAME`, and `M365_PASSWORD` are filled out.
 
-Next, run the sharepoint_downloader.py script with either the `-D` or `--driveid` flags (like so: `python3 sharepoint_downloader.py -D` or `python3 sharepoint_downloader.py --driveid`).  The script will take about a minute to generate a token and then perform the exact same two Microsoft Graph API calls I outlined above, one for recently viewed files and one for files shared with you.  If your JSON output looks similar to one of the two images above, then all you need to do is follow the `["value"][i]["remoteItem"]["parentReference"]["driveId"]` path to find your `M365_DRIVE_ID` variable.  I would highly recommend copy-pasting the output into some sort of online JSON formatter for easier viewing.
+Next, run the sharepoint_downloader.py script with either the `-D` or `--driveid` flags (like so: `python3 sharepoint_downloader.py -D` or `python3 sharepoint_downloader.py --driveid`).  The script will take about a minute to generate a token and then perform the exact same two Microsoft Graph API calls I outlined above, one for recently viewed files and one for files shared with you.
+
+If your JSON output looks similar to one of the two images above, then all you need to do is follow the `["value"][i]["remoteItem"]["parentReference"]["driveId"]` path to find your `M365_DRIVE_ID` variable.  I would highly recommend copy-pasting the output into some sort of online JSON formatter for easier viewing.
 
 After completing this step, you should have three variables filled out in your `msal_config.env` file; `CLIENT_ID`, `AUTHORITY_URL`, and `M365_DRIVE_ID`.  If you ended up needing to use the script method to generate your drive_id, then you can skip the steps below you already had to follow.
 
@@ -178,7 +178,7 @@ This second example is what is shown in sample.env.  This is a case where you wa
 
 <p align="center"><img src="docs/item path 2-done.png" width="750" height="255"/></p>
 
-For this third example, lets say we wanted to upload a file named `upload test.txt` to the same directory that we used in the second example.  To do this, first make sure your file you want to upload is in the same directory as the script.  Next, set your `M365_FOLDER_PATH` variable to `"Network Operations/On-Call & Scheduled Work"` and your `M365_FILENAME` variable would be `"upload test.txt"` to upload the file to the folder above.
+For this third example, let's say we wanted to upload a file named `upload test.txt` to the same directory that we used in the second example.  To do this, first make sure your file you want to upload is in the same directory as the script.  Next, set your `M365_FOLDER_PATH` variable to `"Network Operations/On-Call & Scheduled Work"` and your `M365_FILENAME` variable would be `"upload test.txt"` to upload the file to the folder above.
 
 After completing this step, you should have five variables filled out in your `msal_config.env` file; `CLIENT_ID`, `AUTHORITY_URL`, `M365_DRIVE_ID`, `M365_FOLDER_PATH`, and `M365_FILENAME`.
 
@@ -227,9 +227,13 @@ Additionally, Selenium (the web automation framework being used) requires someth
 
 Firefox's webdriver is called Geckodriver, and tends to be updated every 3-6 months and will work for all the Firefox versions between updates.  You can find your current Firefox version in the GUI by going to the Menu in the top right and navigating to Help > About Firefox, and your version should be in the window that pops up in the center.  If you are going the CLI route, you can run the command `firefox --version` to see the currently installed version.
 
-[This platform page](https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html) maps each geckodriver release to what version of Firefox they will work with.  Find what geckodriver release you need and go [to this geckodriver download page](https://github.com/mozilla/geckodriver/releases), scroll down until you see the Assets dropdown for the release you need, and download the geckodriver that corresponds to your operating system. After downloading it, extract the geckodriver file and put it in the same directory as the script if you are on Windows.  
+[This platform page](https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html) maps each geckodriver release to what version of Firefox they will work with.  Find what geckodriver release you need and go [to this geckodriver download page](https://github.com/mozilla/geckodriver/releases), scroll down until you see the Assets dropdown for the release you need, and download the geckodriver that corresponds to your operating system.
 
-If you are on a *nix system, copy/move the extracted geckodriver file to a directory that is in your system PATH, such as `/bin`, `/usr/bin`, `/usr/local/bin`, or others.  You can check to see what folders are in your PATH variable on *nix machines by running the command `echo $PATH`.  If you are able to run the command `geckodriver` anywhere on the machine after copying it into a directory that is in your system PATH, then this step has been completed successfully on. 
+After downloading it, extract the geckodriver file and put it in the same directory as the script if you are on Windows.  If you want, you could add it to your system environment variables, but this isn't necessary on Windows.
+
+If you are on a *nix system, copy/move the extracted geckodriver file to a directory that is in your system PATH, such as `/bin`, `/usr/bin`, `/usr/local/bin`, or others.  You can check to see what folders are in your PATH variable on *nix machines by running the command `echo $PATH`.  If you are able to run the command `geckodriver` anywhere on the machine after copying it into a directory that is in your system PATH, then this step has been completed successfully on.
+
+For some reason, you are unable to just simply put the geckodriver executable in the same folder as the script like you can on Windows.
 
 ## Common Questions & Issues
 Listed below are general questions and problems that I either encountered myself or was asked about.
@@ -241,7 +245,7 @@ Listed below are general questions and problems that I either encountered myself
   - `AUTHORITY_URL` - Your authority URL contains your Tenant ID concatenated at the end, which is a unique identifier for your entire Microsoft 365 organization/company.  If this gets leaked, there is really nothing you can do other than recreate your entire Microsoft 365 space or possibly contact Microsoft support to change your Tenant ID, although I have no idea if that's even possible.
   - `M365_USERNAME`, `M365_PASSWORD`, & `MFA_SECRET` - These three variables make up your login credentials.  Pretty self explanatory, if these are shared/stolen/lost, others can login to the account that this script uses.
   - `CLIENT_ID` - Client ID's are unique identifiers for Azure App Registrations, and while these are much easier to remake (delete and recreate the Azure App), they still are an integral portion of the token generation process.  However, tokens can only be made with a combination of Client ID + Authority URL + User Credentials, so unless a major data breach has occurred, you shouldn't realistically need to worry about malicious API calls from tokens.
-  - `M365_DRIVE_ID` - Your Drive ID is a unique ID associated with your SharePoint/OneDrive/Teams drive.  While this is a unique value per drive, it is useless without a token or the ability to log in to an account that has access to that drive, and can be remade by creating a new drive.
+  - `M365_DRIVE_ID` - Your Drive ID is a unique ID associated with your SharePoint/OneDrive/Teams drive.  While this is a unique value per drive, it is useless without a token or the ability to log in to an account that has access to that drive and can be remade by creating a new drive.
   - `M365_FOLDER_PATH` & `M365_FILENAME` - These two variables are pretty innocent as they store the path to the file you want to download and the filename after it has been downloaded respectively.  Not really important unless the folder path or filename contains sensitive information.
 - I purposefully have not included a blank msal_config.env file in this repo and have blacklisted all .env files in the .gitignore except for the sample in an attempt to keep your msal_config.env file off of GitHub.  Ideally, if you do want to back up your msal_config.env file, you would do it on a different platform than GitHub or at least make a separate private repo to store the file in.  You can always just fork this project and remove the line from .gitignore, but I would highly advise against storing your msal_config.env file in the same repo as the script.
 </details>
@@ -265,4 +269,11 @@ Listed below are general questions and problems that I either encountered myself
 > **Note**: I have gotten Selenium working on an ARM64 Raspberry Pi, although that needed a specific "geckodriver-arm" or something along those lines installed from the OS's package manager.  I do not believe this is an officially supported release, but the possibility is out there.
 - If you are getting the <ins>**Very high likelihood you are missing geckodriver in the script's directory**</ins> error message, make sure that you have extracted the geckodriver file out of whatever archive format it came it, be it tarballed or zipped, and put it in the same folder as the script on Windows, or if on *nix, added the extracted file to a directory that is in your system PATH, such as `/bin`, `/usr/bin`, `/usr/local/bin`.  If for some reason adding it to one of those directories doesn't work, you can always just [add the folder the script is in into your PATH variable](https://linuxize.com/post/how-to-add-directory-to-path-in-linux/) by either following that linked tutorial, or by editing ~/.bashrc with your text editor of choice and add the line `export PATH=/dir/to/script:$PATH` with the /dir/to/script portion being replaced with the directory path to your script.  Lastly, run `source ~/.bashrc` to update your PATH variable to include the new folder, and run `echo $PATH` to see if your folder has been added.
 - If you are getting some errors with <ins>**urllib3**</ins> or <ins>**chardet**</ins> regarding something not matching a supported version, this is normally because your Python requests package is out of date.  Running the command `python3 -m pip install requests -U` should update the requests package to the most recent version.  As mentioned before, you may need to specify the python subversion in the command (Ex: python3.8 vs just python3) if the above command does not work, tab auto-completion is your friend here to find the python version.  This should be taken care of during the python package installation portion, but just in case.
+</details>
+
+<details>
+  <summary><b>What to do if port 9999 is already in use?</b></summary>
+
+- If you already have port 9999 in use by some other application/server, the simple answer is just change the port to a new unused port.
+- The long answer is that the [createAuthResponseDict()](core/token_generator.py#L186) function that eventually makes your MSAL token doesn't care about any portion of the `http://localhost:9999/tokenCallback` part of the URL, only everything that comes after tokenCallback.  You could technically make the Redirect URI `http://localhost:11234/wafflesAreTasty` as long as the port is not in use on the end device the script is being ran on.
 </details>

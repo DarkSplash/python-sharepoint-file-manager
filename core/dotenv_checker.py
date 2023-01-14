@@ -170,7 +170,7 @@ def msalConfigCreator():
         file.write("CLIENT_ID =         \"\"\n")
         file.write("AUTHORITY_URL =     \"\"\n")
         file.write("M365_DRIVE_ID =     \"\"\n")
-        file.write("M365_FOLDER_PATH =    \"\"\n")
+        file.write("M365_FOLDER_PATH =  \"\"\n")
         file.write("M365_FILENAME =     \"\"\n")
         file.write("MFA_SECRET =        \"\"\n")
         file.write("M365_USERNAME =     \"\"\n")
