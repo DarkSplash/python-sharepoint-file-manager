@@ -13,6 +13,7 @@ import os
 
 # Packageless Terminal Colors: https://stackoverflow.com/a/21786287
 RED = "\x1b[1;31;40m"
+REDHIGHLIGHT = "\x1b[1;31;41m"
 GREEN = "\x1b[1;32;40m"
 CLEAR = "\x1b[0m"
 
@@ -121,6 +122,18 @@ def msalConfigChecker(useMFA: bool, runDriveID: bool):
     try:
         if len(os.environ.get("M365_FOLDER_PATH")) == 0:
             print(f"\n{RED}M365_FOLDER_PATH{CLEAR} variable empty")
+            emptyVars = True
+        elif os.environ.get("M365_FOLDER_PATH")[0] == "/":  # Logic for starting slash in folder path
+            badSubstring = os.environ.get("M365_FOLDER_PATH")[0:1]
+            goodSubstring = os.environ.get("M365_FOLDER_PATH")[1:]
+            print(f"\n{RED}M365_FOLDER_PATH{CLEAR} variable has a forward slash at the start, remove the red text below")
+            print(f"{REDHIGHLIGHT}{badSubstring}{CLEAR}{goodSubstring}")
+            emptyVars = True
+        elif os.environ.get("M365_FOLDER_PATH")[-1] == "/": # Logic for ending slash in folder path
+            badSubstring = os.environ.get("M365_FOLDER_PATH")[-1]
+            goodSubstring = os.environ.get("M365_FOLDER_PATH")[0:-1]
+            print(f"\n{RED}M365_FOLDER_PATH{CLEAR} variable has a forward slash at the end, remove the red text below")
+            print(f"{goodSubstring}{REDHIGHLIGHT}{badSubstring}{CLEAR}")
             emptyVars = True
     except:
         print(f"\n{RED}M365_FOLDER_PATH{CLEAR} variable missing from msal_config.env")
