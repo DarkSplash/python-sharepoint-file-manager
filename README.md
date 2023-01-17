@@ -9,8 +9,8 @@ A few scripts that can download and upload files to SharePoint/OneDrive/Teams.
 - [Finding Your Folder Path](#finding-your-folder-path)
 - [Acquiring an MFA Secret](#acquiring-an-mfa-secret)
 - [Python Package Installation](#python-package-installation)
-- [Firefox & Geckodriver Setup](#firefox---geckodriver-setup)
-- [Common Questions & Issues](#common-questions---issues)
+- [Firefox & Geckodriver Setup](#firefox--geckodriver-setup)
+- [Common Questions & Issues](#common-questions--issues)
 
 ## Overview
 These Python scripts allow you to download or upload files to a SharePoint/OneDrive/Teams drive that an account has access to.  To achieve this, the script primarily uses Microsoft Graph API, the Microsoft Authentication Library (msal), Firefox (the web browser), and Selenium along with a few other Python libraries.  The script is ran simply by running `python3 sharepoint_downloader.py` for the download, and `python3 sharepoint_uploader.py` for the upload.
